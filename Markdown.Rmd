@@ -1,20 +1,50 @@
 ---
 title: "Quantitative Analysis Group Assignment"
-author: "Mark Hill + The"
+author: "Mark Hill + The Dai Quach"
 date: "26/09/2021"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
 install.packages("tidyverse")
+install.packages("lubridate")
+
 ```
+https://query1.finance.yahoo.com/v7/finance/download/RIO.AX?period1=915408000&period2=1632787200&interval=1d&events=history&includeAdjustedClose=true
+https://query1.finance.yahoo.com/v7/finance/download/RIO.AX?period1=1601251200&period2=1632700800&interval=1d&events=history&includeAdjustedClose=true
+https://query1.finance.yahoo.com/v7/finance/download/RIO.AX?period1=915408000&period2=1632614400&interval=1wk&events=history&includeAdjustedClose=true
+https://query1.finance.yahoo.com/v7/finance/download/RIO.AX?period1=915408000&period2=1632614400&interval=1mo&events=history&includeAdjustedClose=true
 
 ```{r initial data tidying, include=FALSE}
 library(tidyverse)
-RIO_AX_raw <- read_csv("data/RIO.AX.csv", col_types = cols(Date = col_date(format = "%Y-%m-%d"))) #importing the data 
-RIO_AX_2021 <- RIO_AX_raw %>% filter(Open != "null", Date >= "2021-01-01") #selecting only the 2021 rows
-View(RIO_AX_2021)
+library(lubridate)
+
+RIO_AX_daily_raw <- read_csv("https://query1.finance.yahoo.com/v7/finance/download/RIO.AX?period1=915408000&period2=1632787200&interval=1d&events=history&includeAdjustedClose=true", col_types = cols(Date = col_date(format = "%Y-%m-%d"))) 
+#importing the daily data 
+RIO_AX_weekly_raw <- read_csv("https://query1.finance.yahoo.com/v7/finance/download/RIO.AX?period1=915408000&period2=1632787200&interval=1d&events=history&includeAdjustedClose=true", col_types = cols(Date = col_date(format = "%Y-%m-%d"))) 
+#importing the weekly data 
+RIO_AX_monthly_raw <- read_csv("https://query1.finance.yahoo.com/v7/finance/download/RIO.AX?period1=915408000&period2=1632614400&interval=1mo&events=history&includeAdjustedClose=true", col_types = cols(Date = col_date(format = "%Y-%m-%d"))) 
+#importing the monthly data 
+
+#dropping all columns except the date, and the opening price
+RIO_AX_daily <- RIO_AX_daily_raw %>% select(Date, Open)
+RIO_AX_weekly <- RIO_AX_weekly_raw %>% select(Date, Open)
+RIO_AX_monthly <- RIO_AX_monthly_raw %>% select(Date, Open)
+
+View(RIO_AX_daily)
+View(RIO_AX_weekly)
+View(RIO_AX_monthly)
+
 ```
+## Part One - Introduction
+```{r calculating returns}
+RIO_AX_daily <- RIO_AX_daily %>% mutate(RET= (Open- lag(Open))/lag(Open))
+RIO_AX_weekly <- RIO_AX_daily %>% mutate(RET= (Open- lag(Open))/lag(Open))
+RIO_AX_monthly <- RIO_AX_daily %>% mutate(RET= (Open- lag(Open))/lag(Open))
+
+
+```
+
 
 ```{r first graph}
 plot(x=RIO_AX_2021$Date, y=RIO_AX_2021$Open)
