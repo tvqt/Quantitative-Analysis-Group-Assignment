@@ -5,48 +5,78 @@ date: "26/09/2021"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
+```{r install packages, eval=FALSE, include=FALSE}
 install.packages("tidyverse")
 install.packages("lubridate")
+install.packages("magrittr")
+install.packages("tidyquant")
+install.packages("tidymodels")
 
 ```
-https://query1.finance.yahoo.com/v7/finance/download/RIO.AX?period1=915408000&period2=1632787200&interval=1d&events=history&includeAdjustedClose=true
-https://query1.finance.yahoo.com/v7/finance/download/RIO.AX?period1=1601251200&period2=1632700800&interval=1d&events=history&includeAdjustedClose=true
-https://query1.finance.yahoo.com/v7/finance/download/RIO.AX?period1=915408000&period2=1632614400&interval=1wk&events=history&includeAdjustedClose=true
-https://query1.finance.yahoo.com/v7/finance/download/RIO.AX?period1=915408000&period2=1632614400&interval=1mo&events=history&includeAdjustedClose=true
 
-```{r initial data tidying, include=FALSE}
+```{r load packages, include=FALSE}
 library(tidyverse)
 library(lubridate)
+library(magrittr)
+library(tidyquant)
+library(tidymodels)
+library(timetk)
+```
 
-RIO_AX_daily_raw <- read_csv("https://query1.finance.yahoo.com/v7/finance/download/RIO.AX?period1=915408000&period2=1632787200&interval=1d&events=history&includeAdjustedClose=true", col_types = cols(Date = col_date(format = "%Y-%m-%d"))) 
-#importing the daily data 
-RIO_AX_weekly_raw <- read_csv("https://query1.finance.yahoo.com/v7/finance/download/RIO.AX?period1=915408000&period2=1632787200&interval=1d&events=history&includeAdjustedClose=true", col_types = cols(Date = col_date(format = "%Y-%m-%d"))) 
-#importing the weekly data 
-RIO_AX_monthly_raw <- read_csv("https://query1.finance.yahoo.com/v7/finance/download/RIO.AX?period1=915408000&period2=1632614400&interval=1mo&events=history&includeAdjustedClose=true", col_types = cols(Date = col_date(format = "%Y-%m-%d"))) 
-#importing the monthly data 
 
-#dropping all columns except the date, and the opening price
-RIO_AX_daily <- RIO_AX_daily_raw %>% select(Date, Open)
-RIO_AX_weekly <- RIO_AX_weekly_raw %>% select(Date, Open)
-RIO_AX_monthly <- RIO_AX_monthly_raw %>% select(Date, Open)
+```{r initial data tidying, include=FALSE}
 
-View(RIO_AX_daily)
-View(RIO_AX_weekly)
-View(RIO_AX_monthly)
+RIO_AX_raw <- tq_get("RIO.AX", get  = "stock.prices", from="1999-01-04")
 
+RIO_AX <- RIO_AX_raw %>% filter(is.na(open) == FALSE) %>% select(Date = date, Price = open)
+
+
+```
+
+```{r calculating returns, include=FALSE}
+#calculate return using periodReturn, add it as a column, add a lagged column
+
+RIO_AX_daily <- RIO_AX %>% tq_mutate(select = Price, mutate_fun = periodReturn,
+              period = "daily", col_rename = "Daily Return") %>% mutate(`Return lagged by 1 day` = lag(`Daily Return`)) 
+
+RIO_AX_weekly <- RIO_AX %>% tq_transmute(select = Price, mutate_fun = periodReturn, period = "weekly", col_rename = "Weekly Return" ) %>% left_join(RIO_AX) %>% relocate(Price, .after = Date )  %>% mutate(`Return lagged by 1 day` = lag(`Weekly Return`))
+
+RIO_AX_monthly <- RIO_AX %>% tq_transmute(select = Price, mutate_fun = periodReturn, period = "monthly", col_rename = "Monthly Return" ) %>% left_join(RIO_AX) %>% relocate(Price, .after = Date ) %>% mutate(`Return lagged by 1 day` = lag(`Monthly Return`))
 ```
 ## Part One - Introduction
-```{r calculating returns}
-RIO_AX_daily <- RIO_AX_daily %>% mutate(RET= (Open- lag(Open))/lag(Open))
-RIO_AX_weekly <- RIO_AX_daily %>% mutate(RET= (Open- lag(Open))/lag(Open))
-RIO_AX_monthly <- RIO_AX_daily %>% mutate(RET= (Open- lag(Open))/lag(Open))
+```{r ACF calculation, include=FALSE}
 
-
+daily_acf <- tk_acf_diagnostics(RIO_AX_daily, .date_var = Date, .value = `Daily Return`)
+weekly_acf <- tk_acf_diagnostics(RIO_AX_weekly, .date_var = Date, .value = `Weekly Return`)
+monthly_acf <- tk_acf_diagnostics(RIO_AX_monthly, .date_var = Date, .value = `Monthly Return`)
+  
+```
+## Part Two 
+```{r plot ACF, echo=FALSE}
+daily_acf %>% filter(lag != 0) %>% ggplot(aes(x= lag)) + geom_point(aes(y= ACF)) + geom_line(aes(y= .white_noise_upper)) + geom_line(aes(y= .white_noise_lower)) 
 ```
 
+## Part Three
+```{r echo=FALSE}
+summary(RIO_AX_daily)
+```
 
-```{r first graph}
-plot(x=RIO_AX_2021$Date, y=RIO_AX_2021$Open)
+## Part Four
+```{r Regression Analysis, include=FALSE}
+RET_regression_daily <- lm(data = RIO_AX_daily, `Daily Return` ~ `Return lagged by 1 day`)
+RET_regression_weekly <- lm(data = RIO_AX_weekly,`Weekly Return` ~ `Return lagged by 1 day`)
+RET_regression_monthly <- lm(data = RIO_AX_monthly, `Monthly Return` ~ `Return lagged by 1 day`)
+```
+
+```{r Regression Summary Table, echo=FALSE}
+tidy(RET_regression_daily)
+glance(RET_regression_daily) %>% select(`Number of Observations` = nobs, `Adjusted R Squared` = adj.r.squared)
+
+tidy(RET_regression_weekly)
+glance(RET_regression_weekly) %>% select(`Number of Observations` = nobs, `Adjusted R Squared` = adj.r.squared)
+
+tidy(RET_regression_monthly)
+glance(RET_regression_monthly) %>% select(`Number of Observations` = nobs, `Adjusted R Squared` = adj.r.squared)
+
 ```
 
