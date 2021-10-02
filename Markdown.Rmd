@@ -15,6 +15,7 @@ install.packages("magrittr")
 install.packages("tidyquant")
 install.packages("tidymodels")
 
+
 ```
 
 ```{r load packages, include=FALSE}
@@ -69,6 +70,11 @@ RET_regression_monthly <- lm(data = RIO_AX_monthly, `Monthly Return` ~ `Return l
 ```
 
 
+```{r}
+ggplot(data = RIO_AX_daily, aes(y= `Daily Return`, x = `Return lagged by 1 day`)) + geom_line()
+```
+
+
 ## Results
 ```{r ACF calculation, include=FALSE}
 
@@ -79,8 +85,11 @@ monthly_acf <- tk_acf_diagnostics(RIO_AX_monthly, .date_var = Date, .value = `Mo
 ```
 
 ```{r plot ACF, echo=FALSE}
-daily_acf %>% filter(lag != 0) %>% ggplot(aes(x= lag)) + geom_point(aes(y= ACF)) + geom_line(aes(y= .white_noise_upper)) + geom_line(aes(y= .white_noise_lower)) 
+daily_acf %>% ggplot(aes(x= lag)) + geom_point(aes(y= ACF)) + geom_line(aes(y= .white_noise_upper)) + geom_line(aes(y= .white_noise_lower)) 
 ```
+
+
+
 
 ```{r Regression Summary Table, echo=FALSE}
 tidy(RET_regression_daily)
