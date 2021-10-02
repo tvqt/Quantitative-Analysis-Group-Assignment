@@ -2,7 +2,10 @@
 title: "Quantitative Analysis Group Assignment"
 author: "Mark Hill + The Dai Quach"
 date: "26/09/2021"
-output: html_document
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r install packages, eval=FALSE, include=FALSE}
@@ -91,3 +94,6 @@ glance(RET_regression_monthly) %>% select(`Number of Observations` = nobs, `Adju
 
 ```
 
+## Recommendations
+
+## Conclusion
