@@ -3,8 +3,8 @@ title: "Quantitative Analysis Group Assignment"
 author: "Mark Hill + The Dai Quach"
 date: "26/09/2021"
 output:
-  word_document: default
   html_document: default
+  word_document: default
   pdf_document: default
 ---
 
@@ -42,9 +42,9 @@ RIO_AX <- RIO_AX_raw %>% filter(is.na(open) == FALSE) %>% select(Date = date, Pr
 RIO_AX_daily <- RIO_AX %>% tq_mutate(select = Price, mutate_fun = periodReturn,
               period = "daily", col_rename = "Daily Return") %>% mutate(`Return lagged by 1 day` = lag(`Daily Return`)) 
 
-RIO_AX_weekly <- RIO_AX %>% tq_transmute(select = Price, mutate_fun = periodReturn, period = "weekly", col_rename = "Weekly Return" ) %>% left_join(RIO_AX) %>% relocate(Price, .after = Date )  %>% mutate(`Return lagged by 1 day` = lag(`Weekly Return`))
+RIO_AX_weekly <- RIO_AX %>% tq_transmute(select = Price, mutate_fun = periodReturn, period = "weekly", col_rename = "Weekly Return" ) %>% left_join(RIO_AX) %>% relocate(Price, .after = Date )  %>% mutate(`Return lagged by 1 week` = lag(`Weekly Return`))
 
-RIO_AX_monthly <- RIO_AX %>% tq_transmute(select = Price, mutate_fun = periodReturn, period = "monthly", col_rename = "Monthly Return" ) %>% left_join(RIO_AX) %>% relocate(Price, .after = Date ) %>% mutate(`Return lagged by 1 day` = lag(`Monthly Return`))
+RIO_AX_monthly <- RIO_AX %>% tq_transmute(select = Price, mutate_fun = periodReturn, period = "monthly", col_rename = "Monthly Return" ) %>% left_join(RIO_AX) %>% relocate(Price, .after = Date ) %>% mutate(`Return lagged by 1 month` = lag(`Monthly Return`))
 ```
 
 
