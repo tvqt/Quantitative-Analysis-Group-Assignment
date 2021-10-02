@@ -70,8 +70,8 @@ RET_regression_monthly <- lm(data = RIO_AX_monthly, `Monthly Return` ~ `Return l
 ```
 
 
-```{r}
-ggplot(data = RIO_AX_daily, aes(y= `Daily Return`, x = `Return lagged by 1 day`)) + geom_line()
+```{r plotting return vs return of previous day}
+ggplot(data = RIO_AX_daily, aes(y= `Daily Return`, x = `Return lagged by 1 day`)) + geom_line() + ggtitle("Return on Rio Tinto shares, vs. Return of Previous Day") + theme(plot.title = element_text(hjust = 0.5))
 ```
 
 
