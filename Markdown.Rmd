@@ -65,8 +65,8 @@ summary(RIO_AX_daily)
 
 ```{r Regression Analysis, echo=TRUE}
 RET_regression_daily <- lm(data = RIO_AX_daily, `Daily Return` ~ `Return lagged by 1 day`)
-RET_regression_weekly <- lm(data = RIO_AX_weekly,`Weekly Return` ~ `Return lagged by 1 day`)
-RET_regression_monthly <- lm(data = RIO_AX_monthly, `Monthly Return` ~ `Return lagged by 1 day`)
+RET_regression_weekly <- lm(data = RIO_AX_weekly,`Weekly Return` ~ `Return lagged by 1 week`)
+RET_regression_monthly <- lm(data = RIO_AX_monthly, `Monthly Return` ~ `Return lagged by 1 month`)
 ```
 
 
