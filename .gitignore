@@ -28,3 +28,6 @@ vignettes/*.pdf
 .Renviron
 .DS_Store
 Markdown.html
+Markdown.docx
+Markdown.pdf
+a

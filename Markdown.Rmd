@@ -1,11 +1,11 @@
 ---
 title: "Quantitative Analysis Group Assignment"
-author: "Mark Hill + The Dai Quach"
+author: "Mark Hill"
 date: "26/09/2021"
 output:
+  pdf_document: default
   html_document: default
   word_document: default
-  pdf_document: default
 ---
 
 ```{r install packages, eval=FALSE, include=FALSE}
@@ -14,8 +14,6 @@ install.packages("lubridate")
 install.packages("magrittr")
 install.packages("tidyquant")
 install.packages("tidymodels")
-
-
 ```
 
 ```{r load packages, include=FALSE}
@@ -25,13 +23,14 @@ library(magrittr)
 library(tidyquant)
 library(tidymodels)
 library(timetk)
+require(knitr)
 ```
 
 ```{r initial data tidying, include=FALSE}
 
-RIO_AX_raw <- tq_get("RIO.AX", get  = "stock.prices", from="1999-01-04")
+APT_AX_raw <- tq_get("APT.AX", get  = "stock.prices", from="2017-06-29")
 
-RIO_AX <- RIO_AX_raw %>% filter(is.na(open) == FALSE) %>% select(Date = date, Price = open)
+APT_AX <- APT_AX_raw %>% filter(is.na(open) == FALSE) %>% select(Date = date, Price = open)
 
 
 ```
@@ -39,74 +38,153 @@ RIO_AX <- RIO_AX_raw %>% filter(is.na(open) == FALSE) %>% select(Date = date, Pr
 ```{r calculating returns, include=FALSE}
 #calculate return using periodReturn, add it as a column, add a lagged column
 
-RIO_AX_daily <- RIO_AX %>% tq_mutate(select = Price, mutate_fun = periodReturn,
+APT_AX_daily <- APT_AX %>% tq_mutate(select = Price, mutate_fun = periodReturn,
               period = "daily", col_rename = "Daily Return") %>% mutate(`Return lagged by 1 day` = lag(`Daily Return`)) 
 
-RIO_AX_weekly <- RIO_AX %>% tq_transmute(select = Price, mutate_fun = periodReturn, period = "weekly", col_rename = "Weekly Return" ) %>% left_join(RIO_AX) %>% relocate(Price, .after = Date )  %>% mutate(`Return lagged by 1 week` = lag(`Weekly Return`))
+APT_AX_weekly <- APT_AX %>% tq_transmute(select = Price, mutate_fun = periodReturn, period = "weekly", col_rename = "Weekly Return" ) %>% left_join(APT_AX) %>% relocate(Price, .after = Date )  %>% mutate(`Return lagged by 1 week` = lag(`Weekly Return`))
 
-RIO_AX_monthly <- RIO_AX %>% tq_transmute(select = Price, mutate_fun = periodReturn, period = "monthly", col_rename = "Monthly Return" ) %>% left_join(RIO_AX) %>% relocate(Price, .after = Date ) %>% mutate(`Return lagged by 1 month` = lag(`Monthly Return`))
+APT_AX_monthly <- APT_AX %>% tq_transmute(select = Price, mutate_fun = periodReturn, period = "monthly", col_rename = "Monthly Return" ) %>% left_join(APT_AX) %>% relocate(Price, .after = Date ) %>% mutate(`Return lagged by 1 month` = lag(`Monthly Return`))
 ```
 
 
 ## Introduction
-Our report investigates Rio Tinto, a large  We chose Rio Tinto because of the recent developments in the commodities market, with the iron ore price dropping by more than half. Rio Tinto is the largest producer of iron ore in Australia.
 
-We chose to use [daily/weekly/monthly] data, because ...
-We gathered all the available stock information for the company, but chose to focus on the time period _____ to the present
+
+In this report, I analyse the returns on the stock of Afterpay Ltd., a technology company listed on the ASX 200, using an AR(1) model. 
+
+The paper includes is a brief history of the company, a discussion of the methodology (the choices that were made with regards to the model as well as the data, with my reasons for my choices), the results of the model, an analysis of the results, some recommendations, and lastly a conclusion.
+
+The model was found to not be predictive, however the paper may prove useful to others, either as a starting point, an example of a typical econometric process, or as negative data ruling out a similar approach.
 
 ## Background
-Rio Tinto is an Austrailan metals and mining company, founded in 1873. With a net profit of $10.4 billion USD, 45,000 employees, is one of the largest companies on the Australian Stock Exchange, and one of the largest mining companies in the world. 
+
+Afterpay is a financial technology ("fintech") business based in Melbourne, Australia. They are primarily known for their "buy now pay later" offering, enabling consumers to buy products, and pay them off over time, similar to a credit card, however without charging interest. 
+
+Founded in 2014, Afterpay was listed on the ASX in 2016, and joined the S&P/ASX 200 two years later.
+
+They primarily make money based on the commissions they charge to participating businesses, and late fees charged to customers. 
+
+Enjoying explosive growth during the COVID-19 pandemic, the company's total sales more than quadrupled, from \$5.2 billion AUD in 2019, to \$11.1 billion in 2020, and \$22.4 billion in 2021- an impressive success for the relatively small Australian technology sector.
+
+## Data
+
+### Time Period & Frequency
+
+As Afterpay was only listed relatively recently, I decided to include their entire trading period in my analysis. I opted for daily price data because I wanted to gather as much information as possible, and the daily time series had the largest frequency available. To cover all bases, I also examined the weekly and monthly data, to make sure there weren't any unusual or unexpected trends in those time series, however I didn't find anything of note.
+
+### Transformation, Adjustment & Decomposition
+
+None of the above were deemed as necessary for the Afterpay data. The reasons are as follows:
+
+* Transformations can take many forms- log transformation, power transformations, differencing, among others. In a way, gathering the returns is a type of transformation, however this is debatable/borderline
+
+* Adjustment can take on a number of forms- calendar adjustment, inflation adjustment, population adjustment, among others, depending on the type of data. For the type of data we are analysing, stock returns, no adjustment is necessary
+
+* Decomposition has been defined as '[the process we use when we] want to decompose the difference in the mean of an outcome variable Y between two groups A and B', however, in this case, we are only analysing one set of data (returns on their stock price), so there is nothing to decompose
+
+
+```{r Regression Analysis, include=FALSE}
+RET_regression_daily <- lm(data = APT_AX_daily, `Daily Return` ~ `Return lagged by 1 day`)
+RET_regression_weekly <- lm(data = APT_AX_weekly,`Weekly Return` ~ `Return lagged by 1 week`)
+RET_regression_monthly <- lm(data = APT_AX_monthly, `Monthly Return` ~ `Return lagged by 1 month`)
+```
 
 ## Methodology
-
-```{r summary statistics, echo=FALSE}
-summary(RIO_AX_daily)
-```
-
-```{r Regression Analysis, echo=TRUE}
-RET_regression_daily <- lm(data = RIO_AX_daily, `Daily Return` ~ `Return lagged by 1 day`)
-RET_regression_weekly <- lm(data = RIO_AX_weekly,`Weekly Return` ~ `Return lagged by 1 week`)
-RET_regression_monthly <- lm(data = RIO_AX_monthly, `Monthly Return` ~ `Return lagged by 1 month`)
-```
-
-
-```{r plotting return vs return of previous day}
-ggplot(data = RIO_AX_daily, aes(y= `Daily Return`, x = `Return lagged by 1 day`)) + geom_line() + ggtitle("Return on Rio Tinto shares, vs. Return of The Previous Day") + theme(plot.title = element_text(hjust = 0.5))
-
-ggplot(data = RIO_AX_weekly, aes(y= `Weekly Return`, x = `Return lagged by 1 week`)) + geom_line() + ggtitle("Return on Rio Tinto shares, vs. Return of The Previous Week") + theme(plot.title = element_text(hjust = 0.5))
-
-ggplot(data = RIO_AX_monthly, aes(y= `Monthly Return`, x = `Return lagged by 1 month`)) + geom_line() + ggtitle("Return on Rio Tinto shares, vs. Return of The Previous Month") + theme(plot.title = element_text(hjust = 0.5))
-```
-
+The model chosen was a simple autoregressive model, with one lag- stock prices of the previous day are used to predict prices of today.
 
 ## Results
+```{r plotting return vs return of previous day, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(data = APT_AX_daily, aes(y= `Daily Return`, x = `Return lagged by 1 day`)) + geom_point() + ggtitle("Return on Afterpay shares, vs. return on the previous day") + theme(plot.title = element_text(hjust = 0.5)) + ylab("Percent change in Afterpay share price") + xlab("Percent change in Afterpay share price, lagged by 1 day") + geom_smooth(method = lm)
+```
+
 ```{r ACF calculation, include=FALSE}
 
-daily_acf <- tk_acf_diagnostics(RIO_AX_daily, .date_var = Date, .value = `Daily Return`)
-weekly_acf <- tk_acf_diagnostics(RIO_AX_weekly, .date_var = Date, .value = `Weekly Return`)
-monthly_acf <- tk_acf_diagnostics(RIO_AX_monthly, .date_var = Date, .value = `Monthly Return`)
+daily_acf <- tk_acf_diagnostics(APT_AX_daily, .date_var = Date, .value = `Daily Return`) %>% filter(lag != 0)
+weekly_acf <- tk_acf_diagnostics(APT_AX_weekly, .date_var = Date, .value = `Weekly Return`)
+monthly_acf <- tk_acf_diagnostics(APT_AX_monthly, .date_var = Date, .value = `Monthly Return`)
   
 ```
 
-```{r plot ACF, echo=FALSE}
-daily_acf %>% ggplot(aes(x= lag)) + geom_point(aes(y= ACF)) + geom_line(aes(y= .white_noise_upper)) + geom_line(aes(y= .white_noise_lower)) 
-```
 
-
-
-
+### Descriptive Statistics
 ```{r Regression Summary Table, echo=FALSE}
-tidy(RET_regression_daily)
-glance(RET_regression_daily) %>% select(`Number of Observations` = nobs, `Adjusted R Squared` = adj.r.squared)
-
-tidy(RET_regression_weekly)
-glance(RET_regression_weekly) %>% select(`Number of Observations` = nobs, `Adjusted R Squared` = adj.r.squared)
-
-tidy(RET_regression_monthly)
-glance(RET_regression_monthly) %>% select(`Number of Observations` = nobs, `Adjusted R Squared` = adj.r.squared)
+summary_1 <- tidy(RET_regression_daily)
+summary_2 <- glance(RET_regression_daily) %>% select(`Number of Observations` = nobs, `Adjusted R Squared` = adj.r.squared)
+kable(summary_1, caption = "Regression model coefficient estimates, standard errors, t values, and p-values")
+kable(summary_2, caption = "Regression model Number of Observations and Adjusted R Squared")
 
 ```
+#### Number of Observations
+There are `r summary_2[[1]]` observations in the model. As this is quite large, small sample size issues are very unlikely to be a problem.
+
+#### Adjusted R Squared
+The adjusted R squared is `r summary_2[[2]]`. An adjusted r squared less than zero usually indicates that the model's regressors have extremely poor predictive ability of the regressand.
+
+#### Value of the Slope
+The slope's coefficient is `r summary_1[[2,2]]`- very slightly negative, however, not statistically significant at the .05% level. Therefore, we cannot disprove the null hypothesis that it is zero.
+
+#### P-Value of the Slope
+The p-value is `r summary_1[[2,5]]`. Not only is this not statistically significant, it's only marginally different from the chances of correctly guessing a coin toss (about 0.50).
+
+### Is it like white noise?
+
+To answer this  question, we first have to discuss what white noise is:
+
+#### White noise definition
+
+A white noise process is "a random process of random variables that are uncorrelated, have mean zero, and a finite variance".
+
+To take these properties one by one:
+
+#### Zero mean
+
+The mean of the daily return in the dataset is equal to the intercept of the regression model, which is `r summary_1[[1,2]]`.
+
+On one hand, the p-value of this is `r summary_1[[1,5]]`, which is quite small. 
+
+On the other hand, the mean is incredibly small- only a small fraction above zero. And the regression model gives the lagged return variable a slight negative coefficient, which in practice would likely cancel each other out. 
+
+On balance, it seems that the argument that the mean is zero is more persuasive that it's opposite, however the data is mixed. If one was forced to choose, then I would lean towards the mean being zero.
+
+#### Finite variance
+
+The variance is `r var(APT_AX_daily %>% select("Daily Return"))`, which is finite, so we can say it meets this standard.
+
+#### Uncorrelated
+
+To say that the time series is uncorrelated, we must look at the ACF + PACF:
+
+```{r plot ACF, echo=FALSE}
+daily_acf %>% ggplot(aes(x= lag)) + geom_point(aes(y= ACF)) + geom_line(aes(y= .white_noise_upper)) + geom_line(aes(y= .white_noise_lower)) + ggtitle("ACF of Afterpay lagged regression") + theme(plot.title = element_text(hjust = 0.5)) 
+daily_acf %>% ggplot(aes(x= lag)) + geom_point(aes(y= PACF)) + geom_line(aes(y= .white_noise_upper)) + geom_line(aes(y= .white_noise_lower)) + ggtitle("PACF of Afterpay lagged regression") + theme(plot.title = element_text(hjust = 0.5))
+```
+
+Reasons for arguing the data is correlated include:
+
+* the data appears to have multiple lags that are more extreme than the critical value
+* the most extreme ACF + PACF values are among the smallest lags
+* the variation seems to decrease as the lags increase
+
+With that said, there is reason to believe the data is uncorrelated. If the ACF + PACF lags were completely random, we would expect `r 1000*0.06024752` lags to be found to be significant, just by chance. 
+
+In the Afterpay data, the number of lags more extreme than the critical value was `r sum(daily_acf %>% mutate(upper = PACF > .white_noise_upper, lower = PACF < .white_noise_lower) %>% summarise(sum(upper), sum(lower)))`, which is less than the number we would expect by chance. This, plus the relatively small magnitude of even the most extreme ACF + PACF values points to the time series not being correlated.
+
+It's difficult to say categorically that the data is correlated or uncorrelated; on balance, it appears that the data exhibits some correlation, albeit an extremely small amount. Likewise, it is difficult to answer the question of if the data is white noise-like. It seems like the most likely possibility is that there is be an extremely small effect in amongst a large amount of noise. However, it would take a more comprehensive model to prove that statement true or false.
+
+## Analysis
+As can be seen in the results, the data is extremely noisy, and so the model is of limited value. 
+
+Essentially, while an AR(1) model is good for predicting prices (as prices usually don't change significantly day to day), it is less useful in predicting percentage changes in prices, as the prices jitter about in a chaotic manner.
+
+Overall, the analysis didn't provide any useful insights or money-making opportunities. This may have been predictable- after all, it's said that the market is said to have already "priced in" all available information about a company into it's share price (see the efficient market hypothesis). 
 
 ## Recommendations
 
+If one were to try to create a more accurate/predictive model of Afterpay's stock price, I would recommend:
+
+1. Gathering outside data from a wide variety of sources. Examples could include the ASX200 index, other tech stocks, unemployment, retail sales, shipping costs, manufacturing numbers in China, etc.). This would help to disentangle questions like what proportion of a rise or fall is idiosyncratic risk, versus systemic risk
+2. Gathering more company-specific data, and/or more fine-grain data- bid-ask spreads, earnings, credit ratings, hourly or minute-by-minute data, and so on.
+3. Research other econometricians' approaches- stock price prediction isn't a new area, it doesn't make sense to reinvent the wheel.
+
 ## Conclusion
+In this paper, I discussed an analysis of the returns on the stock of Afterpay, using an AR(1) model, which was not found to be statistically significant. With that said, negative data and unsuccessful attempts at answering a question have a (in my opinion, underrated) value- negative findings allows others to know this type of approach with this type of company is not likely to work; and so hopefully, they can try other things instead, which may be more successful. Alternatively, perhaps this model could be expanded upon, using the recommendations as a starting point, and it can be seen if more information helps it to become more predictive.
